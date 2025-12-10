@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ATG Journal Book — by Abdi Najiib Muhamed</title>
+<style>
+  /* -------- Variables & base -------- */
+  :root{
+    --bg:#0b0b0d;
+    --panel:#0f0f10;
+    --muted:#a8a8a8;
+    --gold:#f6c24e;
+    --accent:#ffd777;
+    --danger:#ff6b6b;
+    --glass: rgba(255,255,255,0.03);
+  }
+  [data-theme="light"]{
+    --bg:#fbfaf8;
+    --panel:#ffffff;
+    --muted:#5b5b5b;
+    --gold:#b5811a;
+    --accent:#b5903b;
+    --danger:#cc4b4b;
+    --glass: rgba(0,0,0,0.03);
+  }
+
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg,var(--bg) 0%, #040405 100%);
+    color: white;
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+
+  /* container */
+  .wrap{max-width:980px;margin:24px auto;padding:18px;width:calc(100% - 36px);}
+
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:54px;height:54px;border-radius:12px;
+    background:linear-gradient(135deg,var(--gold),#e6b54a);
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:#080808;
+    box-shadow:0 6px 22px rgba(0,0,0,0.5);
+    font-size:20px;
+  }
+  h1{font-size:20px;margin:0;letter-spacing:0.06em}
+  .subtitle{font-size:12px;color:var(--muted);margin-top:4px}
+
+  .controls{display:flex;gap:8px;align-items:center}
+
+  /* card */
+  .card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.012));
+    border:1px solid rgba(255,255,255,0.04);
+    padding:14px;border-radius:14px;backdrop-filter: blur(6px);
+  }
+
+  /* grid */
+  .grid{display:grid;gap:12px}
+  .grid.cols-3{grid-template-columns:repeat(3,1fr)}
+  .grid.cols-2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:800px){ .grid.cols-3{grid-template-columns:1fr} .grid.cols-2{grid-template-columns:1fr} }
+
+  /* stats */
+  .stat{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+  .stat .num{font-weight:700;font-size:20px}
+  .gold{color:var(--gold);font-weight:700}
+
+  /* form */
+  form.row{display:flex;gap:8px;flex-wrap:wrap}
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;color:inherit;
+    outline:none;font-size:14px;
+  }
+  textarea{min-height:72px;resize:vertical}
+  .btn{background:var(--gold);color:#081014;padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
+  .btn.danger{background:var(--danger);color:#fff}
+
+  /* trade list */
+  .trade{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+  .trade .meta{display:flex;flex-direction:column}
+  .trade .sym{font-weight:700;color:var(--gold)}
+  .pnl{font-weight:800}
+
+  /* footer */
+  footer{margin-top:auto;padding:18px;text-align:center;color:var(--muted);border-top:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg,transparent, rgba(0,0,0,0.2))}
+
+  /* small */
+  .small{font-size:13px;color:var(--muted)}
+  .icon{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.03)}
+
+  /* auth modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:50}
+  .authbox{width:92%;max-width:420px;padding:20px;border-radius:12px;background:var(--panel);box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.04)}
+
+  /* util */
+  .muted{color:var(--muted)}
+  .justify-right{text-align:right}
+</style>
+</head>
+<body>
+  <div class="wrap" id="app" aria-live="polite">
+    <header>
+      <div class="brand">
+        <div class="logo">ATG</div>
+        <div>
+          <h1>ATG Journal Book</h1>
+          <div class="subtitle">Trade journaling — built for traders who are serious </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="themeToggle" class="icon small" title="Toggle theme (Dark/Gold)">🌓</button>
+        <button id="logoutBtn" class="icon" title="Log out" style="display:none">🔒</button>
+      </div>
+    </header>
+
+    <!-- analytics -->
+    <section class="grid cols-3" style="margin-bottom:12px">
+      <div class="card stat">
+        <div class="small">Total P/L</div>
+        <div id="totalPL" class="num">$0.00</div>
+        <div class="small muted">Sum of P/L from all trades</div>
+      </div>
+
+      <div class="card stat">
+        <div class="small">Win Rate</div>
+        <div id="winRate" class="num gold">0%</div>
+        <div class="small muted">Percent of profitable trades</div>
+      </div>
+
+      <div class="card stat">
+        <div class="small">Total Trades</div>
+        <div id="totalTrades" class="num">0</div>
+        <div class="small muted">Active journal entries</div>
+      </div>
+    </section>
+
+    <!-- form & controls -->
+    <section class="grid cols-2" style="margin-bottom:14px">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div><strong>Add / Edit Trade</strong><div class="small muted">Entry, Exit, Size → P/L auto-calculated</div></div>
+        </div>
+
+        <form id="tradeForm" class="row" autocomplete="off">
+          <input type="date" id="date" required />
+          <input type="text" id="symbol" placeholder="Symbol (e.g. EURUSD)" required />
+          <select id="side"><option>Buy</option><option>Sell</option></select>
+          <input type="number" id="entry" step="any" placeholder="Entry" required />
+          <input type="number" id="exit" step="any" placeholder="Exit" required />
+          <input type="number" id="size" step="any" placeholder="Size (lots/qty)" required />
+          <input type="number" id="pnl" step="any" placeholder="P/L (optional)" />
+          <textarea id="notes" placeholder="Notes / reason"></textarea>
+
+          <div style="display:flex;gap:8px;width:100%">
+            <button class="btn" type="submit" id="saveBtn">Add Trade</button>
+            <button class="btn ghost" type="button" id="resetBtn">Reset</button>
+            <button class="btn ghost" type="button" id="exportBtn">Export CSV</button>
+            <label class="btn ghost" style="cursor:pointer;padding:10px">
+              Import CSV
+              <input type="file" id="importFile" accept=".csv" style="display:none" />
+            </label>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" id="tradesCard">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <strong>Trades</strong>
+          <div class="small muted">Click a trade to edit — long-press (or Delete) to remove</div>
+        </div>
+
+        <div id="tradesList" style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding-right:6px"></div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="small muted">© 2025 <span style="color:var(--gold);font-weight:700">Abdi Najiib Muhamed</span>. All rights reserved.</div>
+    </footer>
+  </div>
+
+  <!-- Auth overlay (set password / login) -->
+  <div id="authOverlay" class="overlay" style="display:none">
+    <div class="authbox">
+      <div id="authContent"></div>
+    </div>
+  </div>
+
+<script>
+(async function(){
+
+  /* ------------------- Utilities ------------------- */
+  function qs(id){ return document.getElementById(id); }
+  function $(sel, ctx=document){ return ctx.querySelector(sel); }
+  function format2(n){ return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  /* Hashing helper (SHA-256) */
+  async function sha256Hex(str){
+    const enc = new TextEncoder().encode(str);
+    const hash = await crypto.subtle.digest('SHA-256', enc);
+    const b = Array.from(new Uint8Array(hash)).map(x => x.toString(16).padStart(2,'0')).join('');
+    return b;
+  }
+
+  /* ------------------- Auth logic ------------------- */
+  const authOverlay = qs('authOverlay');
+  const authContent = qs('authContent');
+  const logoutBtn = qs('logoutBtn');
+
+  function showAuth(contentHtml){
+    authContent.innerHTML = contentHtml;
+    authOverlay.style.display = 'flex';
+  }
+  function hideAuth(){
+    authOverlay.style.display = 'none';
+  }
+
+  async function requireAuth(){
+    const storedHash = localStorage.getItem('atg_pass_hash');
+    if(!storedHash){
+      // Set password flow
+      showAuth(`
+        <h3 style="margin-top:0">Set a password</h3>
+        <p class="small muted">Create a password to protect your journal locally on this device.</p>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-direction:column">
+          <input id="newPass" type="password" placeholder="New password" />
+          <input id="newPass2" type="password" placeholder="Repeat password" />
+          <button id="setPass" class="btn">Set Password</button>
+        </div>
+      `);
+      qs('setPass').onclick = async () => {
+        const a = qs('newPass').value.trim();
+        const b = qs('newPass2').value.trim();
+        if(!a || a.length < 4){ alert('Choose a password of at least 4 characters'); return; }
+        if(a !== b){ alert('Passwords do not match'); return; }
+        const h = await sha256Hex(a);
+        localStorage.setItem('atg_pass_hash', h);
+        localStorage.setItem('atg_session', '1');
+        hideAuth();
+        initApp();
+      };
+    } else {
+      // login flow
+      showAuth(`
+        <h3 style="margin-top:0">Login to ATG Journal</h3>
+        <p class="small muted">Enter your password to unlock the journal.</p>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-direction:column">
+          <input id="loginPass" type="password" placeholder="Password" />
+          <div style="display:flex;gap:8px">
+            <button id="loginBtn" class="btn">Unlock</button>
+            <button id="resetLocal" class="btn ghost">Reset Journal</button>
+          </div>
+          <div class="small muted" style="margin-top:6px">If you forgot your password, you can reset the journal (this deletes all saved trades).</div>
+        </div>
+      `);
+      qs('loginBtn').onclick = async () => {
+        const v = qs('loginPass').value;
+        const h = await sha256Hex(v);
+        if(h === localStorage.getItem('atg_pass_hash')){
+          localStorage.setItem('atg_session','1');
+          hideAuth();
+          initApp();
+        } else alert('Wrong password');
+      };
+      qs('resetLocal').onclick = () => {
+        if(confirm('Reset journal and remove password? This deletes all saved trades.')) {
+          localStorage.removeItem('atg_pass_hash');
+          localStorage.removeItem('atg_trades_v1');
+          localStorage.removeItem('atg_theme');
+          localStorage.removeItem('atg_session');
+          location.reload();
+        }
+      };
+    }
+  }
+
+  logoutBtn.addEventListener('click', ()=>{
+    localStorage.removeItem('atg_session');
+    // show login immediately
+    requireAuth();
+    logoutBtn.style.display='none';
+  });
+
+  /* -------------- Theme toggle -------------- */
+  const themeToggle = qs('themeToggle');
+  function applyTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('atg_theme', t);
+    // set icon
+    themeToggle.textContent = t === 'light' ? '🌞' : '🌙';
+  }
+  themeToggle.addEventListener('click', ()=>{
+    const cur = localStorage.getItem('atg_theme') || 'dark';
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  });
+
+  /* -------------- Data & storage -------------- */
+  const STORAGE_KEY = 'atg_trades_v1';
+  function loadTrades(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveTrades(arr){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  }
+
+  /* -------------- UI elements -------------- */
+  const totalPL = qs('totalPL');
+  const winRate = qs('winRate');
+  const totalTrades = qs('totalTrades');
+  const tradesList = qs('tradesList');
+  const tradeForm = qs('tradeForm');
+  const exportBtn = qs('exportBtn');
+  const importFile = qs('importFile');
+  const resetBtn = qs('resetBtn');
+
+  let trades = [];
+  let editingId = null;
+
+  function calcStats(){
+    const total = trades.length;
+    const totalP = trades.reduce((s,t)=>s + Number(t.pl || 0),0);
+    const wins = trades.filter(t=>Number(t.pl) > 0).length;
+    const avg = total ? totalP / total : 0;
+    totalPL.textContent = '$' + format2(totalP);
+    winRate.textContent = (total ? ((wins/total)*100).toFixed(1) : '0.0') + '%';
+    totalTrades.textContent = '' + total;
+  }
+
+  function renderTrades(){
+    tradesList.innerHTML = '';
+    if(!trades.length){
+      tradesList.innerHTML = '<div class="small muted">No trades yet — add one using the form.</div>';
+      calcStats(); return;
+    }
+    trades.forEach(t=>{
+      const el = document.createElement('div');
+      el.className = 'trade';
+      el.innerHTML = `
+        <div class="meta">
+          <div class="sym">${t.symbol} <span class="small muted">· ${t.side}</span></div>
+          <div class="small muted">${t.date}</div>
+          <div class="small muted">Entry: ${t.entry} · Exit: ${t.exit} · Size: ${t.size}</div>
+          <div class="${Number(t.pl) >= 0 ? 'pnl' : 'pnl'}" style="color:${Number(t.pl)>=0? 'rgb(120, 199, 120)':'#ff8d8d'};margin-top:6px">P/L: ${Number(t.pl).toFixed(2)}</div>
+          <div class="small muted">${t.notes || ''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+          <div class="small muted">${t.id ? '' : ''}</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn ghost editBtn" data-id="${t.id}">Edit</button>
+            <button class="btn danger delBtn" data-id="${t.id}">Delete</button>
+          </div>
+        </div>
+      `;
+      tradesList.appendChild(el);
+    });
+
+    // attach events
+    tradesList.querySelectorAll('.editBtn').forEach(b=>{
+      b.addEventListener('click', (ev)=>{
+        const id = ev.currentTarget.getAttribute('data-id');
+        startEdit(id);
+      });
+    });
+    tradesList.querySelectorAll('.delBtn').forEach(b=>{
+      b.addEventListener('click', (ev)=>{
+        const id = ev.currentTarget.getAttribute('data-id');
+        if(confirm('Delete this trade?')) {
+          trades = trades.filter(tt=>tt.id !== id);
+          saveTrades(trades);
+          renderTrades(); calcStats();
+        }
+      });
+    });
+
+    calcStats();
+  }
+
+  function startEdit(id){
+    const t = trades.find(x=>x.id===id);
+    if(!t) return;
+    editingId = id;
+    qs('date').value = t.date;
+    qs('symbol').value = t.symbol;
+    qs('side').value = t.side;
+    qs('entry').value = t.entry;
+    qs('exit').value = t.exit;
+    qs('size').value = t.size;
+    qs('pnl').value = t.pl;
+    qs('notes').value = t.notes;
+    qs('saveBtn').textContent = 'Save Edit';
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  tradeForm.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const data = {
+      date: qs('date').value || new Date().toISOString().slice(0,10),
+      symbol: qs('symbol').value.trim().toUpperCase(),
+      side: qs('side').value,
+      entry: Number(qs('entry').value),
+      exit: Number(qs('exit').value),
+      size: Number(qs('size').value),
+      pl: qs('pnl').value ? Number(qs('pnl').value) : Number(((Number(qs('exit').value) - Number(qs('entry').value)) * Number(qs('size').value)).toFixed(2)),
+      notes: qs('notes').value.trim()
+    };
+
+    if(editingId){
+      trades = trades.map(t => t.id === editingId ? {...t, ...data} : t);
+      editingId = null;
+      qs('saveBtn').textContent = 'Add Trade';
+    } else {
+      data.id = 't_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+      trades.unshift(data);
+    }
+
+    saveTrades(trades);
+    renderTrades();
+    calcStats();
+    tradeForm.reset();
+  });
+
+  resetBtn.addEventListener('click', ()=>{
+    tradeForm.reset();
+    editingId = null;
+    qs('saveBtn').textContent = 'Add Trade';
+  });
+
+  exportBtn.addEventListener('click', ()=>{
+    if(!trades.length){ alert('No trades to export'); return; }
+    const header = ['date','symbol','side','entry','exit','size','pl','notes'];
+    const rows = trades.map(t => header.map(h => JSON.stringify(t[h] ?? '') ).join(','));
+    const csv = [header.join(','), ...rows].join('\\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'atg_journal_export.csv'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  importFile.addEventListener('change', (ev)=>{
+    const f = ev.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const text = reader.result;
+      parseCSVImport(String(text));
+    };
+    reader.readAsText(f);
+    // clear file input
+    ev.target.value = '';
+  });
+
+  function parseCSVImport(text){
+    const lines = text.split(/\\r?\\n/).map(l=>l.trim()).filter(l=>l);
+    if(!lines.length) return;
+    const header = lines.shift().split(',').map(h=>h.trim().toLowerCase());
+    const newTrades = lines.map(line=>{
+      const cols = line.split(',').map(c => c.replace(/^"|"$/g,''));
+      const obj = {};
+      header.forEach((h,i)=> obj[h] = cols[i] ?? '');
+      const entry = Number(obj.entry || 0);
+      const exit = Number(obj.exit || 0);
+      const size = Number(obj.size || 0);
+      const pl = obj.pl ? Number(obj.pl) : Number(((exit - entry) * size).toFixed(2));
+      return {
+        id: 'imp_' + Date.now() + '_' + Math.floor(Math.random()*9999),
+        date: obj.date || new Date().toISOString().slice(0,10),
+        symbol: (obj.symbol || '').toUpperCase(),
+        side: obj.side || 'Buy',
+        entry, exit, size, pl, notes: obj.notes || ''
+      };
+    });
+    trades = [...newTrades, ...trades];
+    saveTrades(trades);
+    renderTrades();
+    calcStats();
+    alert('Imported ' + newTrades.length + ' trades');
+  }
+
+  /* -------------- Init app -------------- */
+  function initTheme(){
+    const t = localStorage.getItem('atg_theme') || 'dark';
+    applyTheme(t);
+    logoutBtn.style.display = localStorage.getItem('atg_session') ? 'inline-flex' : 'none';
+  }
+
+  function applyTheme(t){
+    document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+    localStorage.setItem('atg_theme', t === 'light' ? 'light' : 'dark');
+    qs('themeToggle').textContent = t === 'light' ? '🌞' : '🌙';
+  }
+
+  function initApp(){
+    initTheme();
+    trades = loadTrades();
+    renderTrades();
+    calcStats();
+    logoutBtn.style.display = localStorage.getItem('atg_session') ? 'inline-flex' : 'none';
+  }
+
+  // start
+  await requireAuth();
+  // If session not set, requireAuth will handle; else initApp will be called after login or set-pass.
+  if(localStorage.getItem('atg_session')) initApp();
+
+})();
+</script>
+</body>
+</html>
